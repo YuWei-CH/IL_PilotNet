@@ -32,23 +32,29 @@ Relevant ROS nodes:
 
 ## Current Best Model
 
-Host path:
+Repository-relative path:
 
 ```text
-/home/$USER/Documents/UIUC-courses/CS588AV/IL_PilotNet/pilotnet_runs/run_teacher_student_13sessions_stronger_001/best_model.pt
+pilotnet_runs/run_teacher_student_13sessions_stronger_001/best_model.pt
 ```
 
-Container path:
+Container path pattern:
 
 ```text
-/home/$USER/host/Documents/UIUC-courses/CS588AV/IL_PilotNet/pilotnet_runs/run_teacher_student_13sessions_stronger_001/best_model.pt
+<repo-container-path>/pilotnet_runs/run_teacher_student_13sessions_stronger_001/best_model.pt
 ```
+
+`<repo-container-path>` is the path to this repository from inside the simulator
+container. If the repository is under your host home directory, the simulator
+container usually sees it under `/home/$USER/host/...`.
 
 Validated inference command:
 
 ```bash
+export REPO_CONTAINER_PATH=/home/$USER/host/<path-to-IL_PilotNet>
+
 rosrun gem_gazebo pilotnet_inference.py \
-  _checkpoint:=/home/$USER/host/Documents/UIUC-courses/CS588AV/IL_PilotNet/pilotnet_runs/run_teacher_student_13sessions_stronger_001/best_model.pt \
+  _checkpoint:=$REPO_CONTAINER_PATH/pilotnet_runs/run_teacher_student_13sessions_stronger_001/best_model.pt \
   _speed:=1.00 \
   _max_steering:=1.00 \
   _steering_scale:=1.0 \
@@ -131,7 +137,7 @@ Drive with `w a s d`. Stop the recorder after a clean lap.
 If a manual data session is good, convert its pose stream into a teacher path:
 
 ```bash
-cd /home/$USER/Documents/UIUC-courses/CS588AV/IL_PilotNet
+cd <IL_PilotNet>
 
 .venv/bin/python for_simulator/scripts/metadata_to_teacher_paths.py \
   --data-root /home/$USER/pilotnet_data_manual \
@@ -187,7 +193,7 @@ ratio conversion is used for simulator-trained models.
 From the project root:
 
 ```bash
-cd /home/$USER/Documents/UIUC-courses/CS588AV/IL_PilotNet
+cd <IL_PilotNet>
 source .venv/bin/activate
 ```
 
@@ -263,8 +269,10 @@ small simulator dataset.
 Inside the simulator container after `source devel/setup.bash`:
 
 ```bash
+export REPO_CONTAINER_PATH=/home/$USER/host/<path-to-IL_PilotNet>
+
 rosrun gem_gazebo pilotnet_inference.py \
-  _checkpoint:=/home/$USER/host/Documents/UIUC-courses/CS588AV/IL_PilotNet/pilotnet_runs/run_teacher_student_13sessions_stronger_001/best_model.pt \
+  _checkpoint:=$REPO_CONTAINER_PATH/pilotnet_runs/run_teacher_student_13sessions_stronger_001/best_model.pt \
   _speed:=1.00 \
   _max_steering:=1.00 \
   _steering_scale:=1.0 \
@@ -274,14 +282,16 @@ rosrun gem_gazebo pilotnet_inference.py \
 Optional debug image dump:
 
 ```bash
+export REPO_CONTAINER_PATH=/home/$USER/host/<path-to-IL_PilotNet>
+
 rosrun gem_gazebo pilotnet_inference.py \
-  _checkpoint:=/home/$USER/host/Documents/UIUC-courses/CS588AV/IL_PilotNet/pilotnet_runs/run_teacher_student_13sessions_stronger_001/best_model.pt \
+  _checkpoint:=$REPO_CONTAINER_PATH/pilotnet_runs/run_teacher_student_13sessions_stronger_001/best_model.pt \
   _speed:=1.00 \
   _max_steering:=1.00 \
   _steering_scale:=1.0 \
   _steering_smoothing:=0.50 \
   _debug_save_images:=true \
-  _debug_output_dir:=/home/$USER/host/Documents/UIUC-courses/CS588AV/IL_PilotNet/for_simulator/sim_debug \
+  _debug_output_dir:=$REPO_CONTAINER_PATH/for_simulator/sim_debug \
   _debug_save_interval:=1.0
 ```
 
