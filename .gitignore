@@ -14,6 +14,11 @@ runs/
 *.ckpt
 *.onnx
 
+# Keep the current best simulator model in the repository.
+!pilotnet_runs/
+!pilotnet_runs/run_teacher_student_13sessions_stronger_001/
+!pilotnet_runs/run_teacher_student_13sessions_stronger_001/best_model.pt
+
 # Raw or converted driving data
 data/
 Data/

@@ -15,5 +15,6 @@ Start with:
 for_simulator/README.md
 ```
 
-Large datasets, model checkpoints, local virtual environments, and debug image
-dumps are intentionally ignored by git.
+Large datasets, local virtual environments, and debug image dumps are
+intentionally ignored by git. The current best simulator checkpoint is kept in
+the repository for convenience.

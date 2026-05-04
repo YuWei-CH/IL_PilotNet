@@ -20,7 +20,7 @@ PilotNet lane-following model. The shared model definition remains at:
 The ROS-side simulator nodes live in the POLARIS GEM simulator workspace:
 
 ```text
-/home/yuwei/gem_simulation_ws/src/POLARIS_GEM_Simulator/gem_simulator/gem_gazebo/scripts/
+/home/$USER/gem_simulation_ws/src/POLARIS_GEM_Simulator/gem_simulator/gem_gazebo/scripts/
 ```
 
 Relevant ROS nodes:
@@ -35,7 +35,7 @@ Relevant ROS nodes:
 Host path:
 
 ```text
-/home/yuwei/Documents/UIUC-courses/CS588AV/IL_PilotNet/pilotnet_runs/run_teacher_student_13sessions_stronger_001/best_model.pt
+/home/$USER/Documents/UIUC-courses/CS588AV/IL_PilotNet/pilotnet_runs/run_teacher_student_13sessions_stronger_001/best_model.pt
 ```
 
 Container path:
@@ -68,11 +68,11 @@ Inside the simulator Docker container, the host home directory is mounted at:
 Examples:
 
 ```text
-Host:      /home/yuwei/teacher_paths/teacher_path.csv
-Container: /home/yuwei/host/teacher_paths/teacher_path.csv
+Host:      /home/$USER/teacher_paths/teacher_path.csv
+Container: /home/$USER/host/teacher_paths/teacher_path.csv
 
-Host:      /home/yuwei/pilotnet_data_teacher
-Container: /home/yuwei/host/pilotnet_data_teacher
+Host:      /home/$USER/pilotnet_data_teacher
+Container: /home/$USER/host/pilotnet_data_teacher
 ```
 
 Save persistent simulator outputs under `/home/$USER/host/...` from inside the
@@ -131,11 +131,11 @@ Drive with `w a s d`. Stop the recorder after a clean lap.
 If a manual data session is good, convert its pose stream into a teacher path:
 
 ```bash
-cd /home/yuwei/Documents/UIUC-courses/CS588AV/IL_PilotNet
+cd /home/$USER/Documents/UIUC-courses/CS588AV/IL_PilotNet
 
 .venv/bin/python for_simulator/scripts/metadata_to_teacher_paths.py \
-  --data-root /home/yuwei/pilotnet_data_manual \
-  --output-dir /home/yuwei/teacher_paths/from_manual_sessions
+  --data-root /home/$USER/pilotnet_data_manual \
+  --output-dir /home/$USER/teacher_paths/from_manual_sessions
 ```
 
 ## 4. Run Teacher Follow
@@ -168,7 +168,7 @@ rosrun gem_gazebo collect_pilotnet_data.py \
 This writes host-side session folders under:
 
 ```text
-/home/yuwei/pilotnet_data_teacher
+/home/$USER/pilotnet_data_teacher
 ```
 
 Each session contains:
@@ -187,7 +187,7 @@ ratio conversion is used for simulator-trained models.
 From the project root:
 
 ```bash
-cd /home/yuwei/Documents/UIUC-courses/CS588AV/IL_PilotNet
+cd /home/$USER/Documents/UIUC-courses/CS588AV/IL_PilotNet
 source .venv/bin/activate
 ```
 
@@ -195,7 +195,7 @@ Recommended optimized command for new simulator training:
 
 ```bash
 python for_simulator/train_pilotnet.py \
-  --data-root /home/yuwei/pilotnet_data_teacher \
+  --data-root /home/$USER/pilotnet_data_teacher \
   --output-dir pilotnet_runs/run_teacher_student_next \
   --epochs 40 \
   --batch-size 128 \
