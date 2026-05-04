@@ -1,7 +1,9 @@
 # IL PilotNet
 
-This repository contains the PilotNet imitation-learning workflows for the
-CS588 autonomous-vehicle project.
+This project uses imitation learning (IL) to train a vehicle to perform lane
+following autonomously from camera images and human/teacher steering labels.
+The model architecture is based on NVIDIA PilotNet, adapted here for both the
+POLARIS GEM simulator and the real GEM4 vehicle workflow.
 
 ## Layout
 
