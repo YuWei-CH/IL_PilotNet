@@ -24,9 +24,10 @@
 '''
 how to run:
 
-ros2 run your_package il_pilotnet_inference.py \
+python3 il_pilotnet_inference.py \
   --ros-args \
   -p model_path:=/path/to/models/best_model.pt \
+  -p device:=auto \
   -p desired_speed:=0.5 \
   -p max_acceleration:=0.5 \
   -p max_steering_wheel_rad:=2.5 \
@@ -159,6 +160,7 @@ class ILPacmodDriver(Node):
             'model_path',
             'models/best_model.pt'
         )
+        self.declare_parameter('device', 'auto')
 
         # Driving parameters. Match gem_gnss_control/pure_pursuit.py:
         # use /pacmod/accel_cmd and /pacmod/brake_cmd, not vehicle_speed_cmd.
@@ -208,6 +210,9 @@ class ILPacmodDriver(Node):
         self.rate_hz = self.get_parameter('rate_hz').value
         self.camera_topic = self.get_parameter('camera_topic').value
         self.model_path = self.get_parameter('model_path').value
+        self.device_mode = self.get_parameter('device').value
+        if self.device_mode not in ('auto', 'cuda', 'cpu'):
+            raise RuntimeError("device must be 'auto', 'cuda', or 'cpu'")
 
         self.desired_speed = float(self.get_parameter('desired_speed').value)
         if self.desired_speed < 0.0:
@@ -245,7 +250,7 @@ class ILPacmodDriver(Node):
         # ----------------------------
         # Device and model
         # ----------------------------
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = self.select_device(self.device_mode)
 
         if not os.path.exists(self.model_path):
             raise FileNotFoundError(
@@ -268,7 +273,7 @@ class ILPacmodDriver(Node):
         self.model.eval()
 
         self.get_logger().info(f"Loaded model from: {self.model_path}")
-        self.get_logger().info(f"Using device: {self.device}")
+        self.get_logger().info(f"Using device: {self.device} (requested={self.device_mode})")
         self.get_logger().info(
             "IL command config: speed_control=pure_pursuit_accel desired_speed=%.2f max_accel=%.2f "
             "steering_unit=pacmod_steering_wheel_rad label_scale=%.2f steering_scale=%.2f "
@@ -425,6 +430,15 @@ class ILPacmodDriver(Node):
         )
 
         self.get_logger().info("IL PACMod driver initialized.")
+
+    def select_device(self, device_mode):
+        if device_mode == 'cpu':
+            return torch.device('cpu')
+        if device_mode == 'cuda':
+            if not torch.cuda.is_available():
+                raise RuntimeError("device=cuda requested, but torch.cuda.is_available() is false")
+            return torch.device('cuda')
+        return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def apply_checkpoint_preprocessing(self, checkpoint_args):
         """

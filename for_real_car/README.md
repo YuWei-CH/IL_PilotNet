@@ -194,12 +194,16 @@ Example direct run after sourcing the vehicle ROS2 workspace:
 python3 il_pilotnet_inference.py \
   --ros-args \
   -p model_path:=/path/to/best_model.pt \
+  -p device:=auto \
   -p desired_speed:=0.5 \
   -p max_acceleration:=0.5 \
   -p max_steering_wheel_rad:=2.5 \
   -p steering_scale:=0.5 \
   -p steer_smoothing_alpha:=0.3
 ```
+
+`device` can be `auto`, `cuda`, or `cpu`. Use `cpu` on the vehicle if CUDA is
+visible but PyTorch fails at runtime with CUDA/cuBLAS library errors.
 
 Before driving, verify the active topic types on the vehicle:
 
