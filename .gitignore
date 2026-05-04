@@ -1,0 +1,34 @@
+# Local environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Large/generated training outputs
+pilotnet_runs/
+runs/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# Raw or converted driving data
+data/
+Data/
+bags/
+*.bag
+*.mcap
+*.db3
+*.csv
+
+# Generated debug/preview images
+for_simulator/sim_debug/
+*.jpg
+*.jpeg
+*.png
+*.webp
+
+# Keep the README scene preview.
+!for_simulator/simulator_scene.png
