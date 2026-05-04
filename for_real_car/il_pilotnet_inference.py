@@ -28,8 +28,7 @@ ros2 run your_package il_pilotnet_inference.py \
   --ros-args \
   -p model_path:=/path/to/models/best_model.pt \
   -p desired_speed:=0.5 \
-  -p speed_control_mode:=accel \
-  -p max_acceleration:=0.15 \
+  -p max_acceleration:=0.5 \
   -p max_steering_wheel_rad:=2.5 \
   -p steering_scale:=0.5 \
   -p steer_smoothing_alpha:=0.25
@@ -161,12 +160,10 @@ class ILPacmodDriver(Node):
             'models/best_model.pt'
         )
 
-        # Driving parameters
-        # For first real-car IL test, keep speed low.
-        self.declare_parameter('desired_speed', 0.3)
-        self.declare_parameter('speed_control_mode', 'accel')
-        self.declare_parameter('max_acceleration', 0.2)
-        self.declare_parameter('speed_cmd_topic', '/pacmod/vehicle_speed_cmd')
+        # Driving parameters. Match gem_gnss_control/pure_pursuit.py:
+        # use /pacmod/accel_cmd and /pacmod/brake_cmd, not vehicle_speed_cmd.
+        self.declare_parameter('desired_speed', 2.0)
+        self.declare_parameter('max_acceleration', 0.5)
 
         # Steering safety. The real-data label is /pacmod/steering_rpt.output,
         # matching pure_pursuit.py's final /pacmod/steering_cmd angular_position:
@@ -212,18 +209,13 @@ class ILPacmodDriver(Node):
         self.camera_topic = self.get_parameter('camera_topic').value
         self.model_path = self.get_parameter('model_path').value
 
-        self.desired_speed = min(
-            1.0,
-            float(self.get_parameter('desired_speed').value)
-        )
-        self.speed_control_mode = self.get_parameter('speed_control_mode').value
-        if self.speed_control_mode not in ('accel', 'speed_cmd'):
-            raise RuntimeError("speed_control_mode must be 'accel' or 'speed_cmd'")
+        self.desired_speed = float(self.get_parameter('desired_speed').value)
+        if self.desired_speed < 0.0:
+            raise RuntimeError("desired_speed must be non-negative")
         self.max_accel = min(
             0.5,
             float(self.get_parameter('max_acceleration').value)
         )
-        self.speed_cmd_topic = self.get_parameter('speed_cmd_topic').value
 
         self.label_scale = float(self.get_parameter('label_scale').value)
         self.steering_scale = float(self.get_parameter('steering_scale').value)
@@ -278,12 +270,10 @@ class ILPacmodDriver(Node):
         self.get_logger().info(f"Loaded model from: {self.model_path}")
         self.get_logger().info(f"Using device: {self.device}")
         self.get_logger().info(
-            "IL command config: speed_control_mode=%s speed_cmd_topic=%s desired_speed=%.2f max_accel=%.2f "
+            "IL command config: speed_control=pure_pursuit_accel desired_speed=%.2f max_accel=%.2f "
             "steering_unit=pacmod_steering_wheel_rad label_scale=%.2f steering_scale=%.2f "
             "max_steering_wheel_rad=%.2f preprocessing=%dx%d crop=(top=%.2f,bottom=%.2f,left=%.2f,right=%.2f) image_mode=%s"
             % (
-                self.speed_control_mode,
-                self.speed_cmd_topic,
                 self.desired_speed,
                 self.max_accel,
                 self.label_scale,
@@ -365,14 +355,6 @@ class ILPacmodDriver(Node):
             10
         )
 
-        self.speed_cmd_pub = None
-        if self.speed_control_mode == 'speed_cmd':
-            self.speed_cmd_pub = self.create_publisher(
-                SystemCmdFloat,
-                self.speed_cmd_topic,
-                10
-            )
-
         self.turn_pub = self.create_publisher(
             SystemCmdInt,
             '/pacmod/turn_cmd',
@@ -400,7 +382,6 @@ class ILPacmodDriver(Node):
 
         self.brake_cmd = SystemCmdFloat(command=0.0)
         self.accel_cmd = SystemCmdFloat(command=0.0)
-        self.speed_cmd = SystemCmdFloat(command=0.0)
 
         # 1: no signal in your pure_pursuit.py
         self.turn_cmd = SystemCmdInt(command=1)
@@ -631,12 +612,6 @@ class ILPacmodDriver(Node):
         dt = time.time() - self.last_image_time
         return dt <= self.image_timeout_sec
 
-    def publish_speed_cmd(self, command):
-        if self.speed_cmd_pub is None:
-            return
-        self.speed_cmd.command = float(command)
-        self.speed_cmd_pub.publish(self.speed_cmd)
-
     def publish_stop(self):
         self.accel_cmd.command = 0.0
         self.brake_cmd.command = 0.4
@@ -644,7 +619,6 @@ class ILPacmodDriver(Node):
         self.steer_cmd.angular_position = 0.0
         self.steer_cmd.angular_velocity_limit = self.steering_velocity_limit
 
-        self.publish_speed_cmd(0.0)
         self.accel_pub.publish(self.accel_cmd)
         self.brake_pub.publish(self.brake_cmd)
         self.steer_pub.publish(self.steer_cmd)
@@ -672,10 +646,9 @@ class ILPacmodDriver(Node):
 
             self.accel_cmd.command = 0.0
             self.accel_pub.publish(self.accel_cmd)
-            self.publish_speed_cmd(0.0)
 
-            # No turn signal
-            self.turn_cmd.command = 1
+            # Match pure_pursuit.py's enable sequence.
+            self.turn_cmd.command = 3
             self.turn_pub.publish(self.turn_cmd)
 
             self.pid_speed.reset()
@@ -709,7 +682,6 @@ class ILPacmodDriver(Node):
             # Keep safe commands.
             self.accel_cmd.command = 0.0
             self.brake_cmd.command = 0.0
-            self.publish_speed_cmd(0.0)
             self.accel_pub.publish(self.accel_cmd)
             self.brake_pub.publish(self.brake_cmd)
             return
@@ -746,23 +718,17 @@ class ILPacmodDriver(Node):
         self.steer_cmd.angular_velocity_limit = self.steering_velocity_limit
         self.steer_pub.publish(self.steer_cmd)
 
-        # 2. Speed control. Some GEM4 PACMod2 setups expose only accel/brake
-        # commands, while others expose vehicle_speed_cmd. Support both.
-        if self.speed_control_mode == 'speed_cmd':
-            self.publish_speed_cmd(self.desired_speed)
-            self.accel_cmd.command = 0.0
-            self.brake_cmd.command = 0.0
-            speed_control_text = f"speed_cmd={self.desired_speed:.2f}"
-        else:
-            now = self.get_clock().now().nanoseconds * 1e-9
-            speed_error = self.desired_speed - self.speed
-            if abs(speed_error) < 0.05:
-                speed_error = 0.0
-            accel_cmd = self.pid_speed.get_control(now, speed_error)
-            accel_cmd = max(0.0, min(accel_cmd, self.max_accel))
-            self.accel_cmd.command = accel_cmd
-            self.brake_cmd.command = 0.0
-            speed_control_text = f"accel_cmd={accel_cmd:.2f}"
+        # 2. Speed control. This mirrors pure_pursuit.py: PID on measured
+        # vehicle speed, publish accel/brake PACMod commands directly.
+        now = self.get_clock().now().nanoseconds * 1e-9
+        speed_error = self.desired_speed - self.speed
+        if abs(speed_error) < 0.05:
+            speed_error = 0.0
+        accel_cmd = self.pid_speed.get_control(now, speed_error)
+        accel_cmd = max(0.0, min(accel_cmd, self.max_accel))
+        self.accel_cmd.command = accel_cmd
+        self.brake_cmd.command = 0.0
+        speed_control_text = f"accel_cmd={accel_cmd:.2f}"
 
         self.accel_pub.publish(self.accel_cmd)
         self.brake_pub.publish(self.brake_cmd)

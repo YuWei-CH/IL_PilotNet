@@ -176,6 +176,11 @@ Default `label_scale` is `10.0`.
 It subscribes to the compressed OAK camera image and publishes PACMod steering,
 gear, accel, brake, turn, and global commands.
 
+Longitudinal control is aligned with `pure_pursuit.py`: it subscribes to
+`/pacmod/vehicle_speed_rpt`, runs a PID controller against `desired_speed`, and
+publishes `/pacmod/accel_cmd` plus `/pacmod/brake_cmd`. It does not use
+`/pacmod/vehicle_speed_cmd`.
+
 Steering follows the same PACMod interface used by `gem_gnss_control`'s
 `pure_pursuit.py`: the node publishes `PositionWithSpeed.angular_position` to
 `/pacmod/steering_cmd`. The value is PACMod steering wheel/motor angle in
@@ -189,9 +194,8 @@ Example direct run after sourcing the vehicle ROS2 workspace:
 python3 il_pilotnet_inference.py \
   --ros-args \
   -p model_path:=/path/to/best_model.pt \
-  -p desired_speed:=0.3 \
-  -p speed_control_mode:=accel \
-  -p max_acceleration:=0.2 \
+  -p desired_speed:=0.5 \
+  -p max_acceleration:=0.5 \
   -p max_steering_wheel_rad:=2.5 \
   -p steering_scale:=0.5 \
   -p steer_smoothing_alpha:=0.3
