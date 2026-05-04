@@ -1,0 +1,18 @@
+[project]
+name = "il-pilotnet"
+version = "0.1.0"
+description = "PilotNet imitation-learning workflows for simulator and GEM4 real-car experiments."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "numpy>=1.24",
+    "opencv-python>=4.8",
+    "pillow>=10",
+    "pygame>=2.5",
+    "rosbags>=0.10",
+    "scipy>=1.10",
+    "torch>=2.1",
+]
+
+[tool.uv]
+package = false

@@ -1,0 +1,18 @@
+{
+  "train": [
+    "/home/yuwei/Documents/UIUC-courses/CS588AV/Data/lane_follow_run1",
+    "/home/yuwei/Documents/UIUC-courses/CS588AV/Data/lane_follow_run2",
+    "/home/yuwei/Documents/UIUC-courses/CS588AV/Data/bags/fast1_2026-04-22_10-26-15",
+    "/home/yuwei/Documents/UIUC-courses/CS588AV/Data/bags/fast2_2026-04-22_10-26-38",
+    "/home/yuwei/Documents/UIUC-courses/CS588AV/Data/bags/fast3_2026-04-22_10-27-21",
+    "/home/yuwei/Documents/UIUC-courses/CS588AV/Data/bags/lane1_2026-04-20_18-45-24"
+  ],
+  "valid": [
+    "/home/yuwei/Documents/UIUC-courses/CS588AV/Data/bags/fast6_2026-04-22_10-31-34",
+    "/home/yuwei/Documents/UIUC-courses/CS588AV/Data/bags/lane2_2026-04-20_18-46-40"
+  ],
+  "test": [
+    "/home/yuwei/Documents/UIUC-courses/CS588AV/Data/bags/lane3_2026-04-20_18-47-55",
+    "/home/yuwei/Documents/UIUC-courses/CS588AV/Data/bags/fast5_2026-04-22_10-30-56"
+  ]
+}

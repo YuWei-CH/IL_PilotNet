@@ -1,0 +1,27 @@
+__pycache__/
+*.pyc
+
+# Generated datasets and training artifacts.
+real_pilotnet_data/
+real_pilotnet_data_*/
+real_pilotnet_data_smoke/
+real_pilotnet_runs/
+*.pt
+*.pth
+*.ckpt
+
+# Generated previews/debug image dumps.
+crop_previews/
+dataset_previews/
+lane_follow12_previews/
+run1_seq_previews/
+sim_debug/
+smoke_previews/
+*.jpg
+*.jpeg
+*.png
+
+# Large/raw bag exports if copied here.
+*.mcap
+*.bag
+*.db3
