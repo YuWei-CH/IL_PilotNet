@@ -7,11 +7,15 @@ This folder contains the real-car side of the PilotNet project:
 - train a PilotNet model that predicts real GEM4 PACMod steering output;
 - run an experimental ROS2 PACMod2 control node.
 
-The shared model definition remains at:
+Training still uses the shared model definition at:
 
 ```text
 ../pilotnet_model.py
 ```
+
+For simpler real-car deployment, `il_pilotnet_inference.py` also contains an
+inline copy of the same `PilotNet` architecture. On the vehicle, the inference
+script only needs itself plus the checkpoint file.
 
 ## Files
 
@@ -216,11 +220,11 @@ ros2 topic info /pacmod/brake_cmd
 ros2 topic info /pacmod/enabled
 ```
 
-The driver loads the shared `../pilotnet_model.py` architecture. For
-checkpoints produced by `train_real_pilotnet.py`, it also reads preprocessing
-metadata from `checkpoint["args"]` and applies the same image width/height,
-crop ratios, image mode, and `label_scale` used during training. If an older
-checkpoint has no metadata, it falls back to the ROS parameters.
+The driver uses an inline `PilotNet` architecture matching `../pilotnet_model.py`.
+For checkpoints produced by `train_real_pilotnet.py`, it also reads
+preprocessing metadata from `checkpoint["args"]` and applies the same image
+width/height, crop ratios, image mode, and `label_scale` used during training.
+If an older checkpoint has no metadata, it falls back to the ROS parameters.
 
 ## Real-Data-To-Simulator Experiments
 

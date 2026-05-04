@@ -27,7 +27,7 @@ how to run:
 python3 il_pilotnet_inference.py \
   --ros-args \
   -p model_path:=/path/to/models/best_model.pt \
-  -p device:=auto \
+  -p device:=cpu \
   -p desired_speed:=0.5 \
   -p max_acceleration:=0.5 \
   -p max_steering_wheel_rad:=2.5 \
@@ -38,9 +38,7 @@ python3 il_pilotnet_inference.py \
 
 import math
 import os
-import sys
 import time
-from pathlib import Path
 
 import cv2
 import numpy as np
@@ -49,6 +47,7 @@ import pygame
 from PIL import Image, ImageEnhance, ImageOps
 
 import torch
+import torch.nn as nn
 
 import rclpy
 from rclpy.node import Node
@@ -64,12 +63,49 @@ from pacmod2_msgs.msg import (
 )
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT))
-
-from pilotnet_model import PilotNet  # noqa: E402
-
 IMAGE_MODES = ("rgb", "gray", "gray_autocontrast", "gray_contrast_sharp")
+
+
+# ================================================================
+# PilotNet Model
+# Kept in this file so real-car deployment only needs the inference script
+# plus a checkpoint. This must stay compatible with train_real_pilotnet.py.
+# ================================================================
+class PilotNet(nn.Module):
+    """Minimal PilotNet-style steering regressor."""
+
+    def __init__(self, in_channels=3, dropout=0.1):
+        super().__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(in_channels, 24, kernel_size=5, stride=2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(24, 36, kernel_size=5, stride=2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(36, 48, kernel_size=5, stride=2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(48, 64, kernel_size=3, stride=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1),
+            nn.ReLU(inplace=True),
+            nn.AdaptiveAvgPool2d((1, 1)),
+        )
+        self.regressor = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(64, 100),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=dropout),
+            nn.Linear(100, 50),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=dropout),
+            nn.Linear(50, 10),
+            nn.ReLU(inplace=True),
+            nn.Linear(10, 1),
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.regressor(x)
+        return x.squeeze(-1)
 
 
 # ================================================================
