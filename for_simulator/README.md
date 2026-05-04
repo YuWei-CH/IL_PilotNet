@@ -139,7 +139,7 @@ If a manual data session is good, convert its pose stream into a teacher path:
 ```bash
 cd <IL_PilotNet>
 
-.venv/bin/python for_simulator/scripts/metadata_to_teacher_paths.py \
+uv run python for_simulator/scripts/metadata_to_teacher_paths.py \
   --data-root /home/$USER/pilotnet_data_manual \
   --output-dir /home/$USER/teacher_paths/from_manual_sessions
 ```
@@ -194,13 +194,13 @@ From the project root:
 
 ```bash
 cd <IL_PilotNet>
-source .venv/bin/activate
+uv sync
 ```
 
 Recommended optimized command for new simulator training:
 
 ```bash
-python for_simulator/train_pilotnet.py \
+uv run python for_simulator/train_pilotnet.py \
   --data-root /home/$USER/pilotnet_data_teacher \
   --output-dir pilotnet_runs/run_teacher_student_next \
   --epochs 40 \

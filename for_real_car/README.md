@@ -33,10 +33,13 @@ Run commands from this folder:
 cd for_real_car
 ```
 
+The Python environment is managed by `uv` from the repository root. The commands
+below use `uv run`, which will use the project `.venv` created by `uv sync`.
+
 Smoke conversion:
 
 ```bash
-../.venv/bin/python convert_mcap_to_pilotnet_dataset.py \
+uv run python convert_mcap_to_pilotnet_dataset.py \
   --splits real_data_splits.json \
   --output-root real_pilotnet_data_smoke \
   --max-frames-per-session 20 \
@@ -46,7 +49,7 @@ Smoke conversion:
 Full conversion:
 
 ```bash
-../.venv/bin/python convert_mcap_to_pilotnet_dataset.py \
+uv run python convert_mcap_to_pilotnet_dataset.py \
   --splits real_data_splits.json \
   --output-root real_pilotnet_data \
   --overwrite
@@ -61,7 +64,7 @@ The steering label is:
 ## 2. Inspect Dataset
 
 ```bash
-../.venv/bin/python inspect_real_dataset.py \
+uv run python inspect_real_dataset.py \
   --data-root real_pilotnet_data \
   --preview-dir dataset_previews
 ```
@@ -72,7 +75,7 @@ deltas, and writes preview contact sheets.
 ## 3. Preview Preprocessing
 
 ```bash
-../.venv/bin/python preview_real_preprocessing.py \
+uv run python preview_real_preprocessing.py \
   --metadata real_pilotnet_data/train/lane1_2026-04-20_18-45-24/metadata.csv \
   --output dataset_previews/real_preprocessing_preview.jpg \
   --crop-top-ratio 0.65 \
@@ -98,7 +101,7 @@ Use the same crop and image mode during training and inference.
 Basic run:
 
 ```bash
-../.venv/bin/python train_real_pilotnet.py \
+uv run python train_real_pilotnet.py \
   --data-root real_pilotnet_data \
   --output-dir real_pilotnet_runs/run_real_vehicle \
   --epochs 25 \
@@ -110,7 +113,7 @@ Basic run:
 Optimized CUDA run:
 
 ```bash
-../.venv/bin/python train_real_pilotnet.py \
+uv run python train_real_pilotnet.py \
   --data-root real_pilotnet_data \
   --output-dir real_pilotnet_runs/run_real_gem4_full_optimized \
   --epochs 25 \

@@ -28,14 +28,16 @@ Create the local Python environment with `uv`:
 
 ```bash
 uv sync
-source .venv/bin/activate
 ```
+
+Run project scripts with `uv run python ...`; `uv` will use the project `.venv`.
+You can also activate it manually with `source .venv/bin/activate` if preferred.
 
 This installs the training/data-processing dependencies, including PyTorch. For
 CUDA training, verify PyTorch sees the GPU:
 
 ```bash
-python - <<'PY'
+uv run python - <<'PY'
 import torch
 print(torch.__version__)
 print(torch.cuda.is_available())
