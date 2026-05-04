@@ -22,8 +22,9 @@ The shared model definition remains at:
 - `real_data_splits.json`: selected train/valid/test bag split.
 - `il_pilotnet_inference.py`: experimental ROS2 PACMod2 control node for GEM4.
 
-Generated datasets, previews, debug dumps, and model checkpoints are ignored by
-git.
+Generated datasets, previews, and debug dumps are ignored by git. Put all model
+runs in the repository-level `../pilotnet_runs/` directory so simulator and
+real-car checkpoints share one place.
 
 ## 1. Convert MCAP Bags
 
@@ -103,7 +104,7 @@ Basic run:
 ```bash
 uv run python train_real_pilotnet.py \
   --data-root real_pilotnet_data \
-  --output-dir real_pilotnet_runs/run_real_vehicle \
+  --output-dir ../pilotnet_runs/run_real_vehicle \
   --epochs 25 \
   --batch-size 128 \
   --learning-rate 1e-3 \
@@ -115,7 +116,7 @@ Optimized CUDA run:
 ```bash
 uv run python train_real_pilotnet.py \
   --data-root real_pilotnet_data \
-  --output-dir real_pilotnet_runs/run_real_gem4_full_optimized \
+  --output-dir ../pilotnet_runs/run_real_gem4_full_optimized \
   --epochs 25 \
   --batch-size 128 \
   --learning-rate 1e-3 \
@@ -153,11 +154,11 @@ avoid duplicating cached images across worker processes.
 
 Outputs:
 
-- `best_model.pt`
-- `latest_model.pt`
-- `metrics.json`
-- `train_args.json`
-- `test_metrics.json` if a test split exists
+- `../pilotnet_runs/<run_name>/best_model.pt`
+- `../pilotnet_runs/<run_name>/latest_model.pt`
+- `../pilotnet_runs/<run_name>/metrics.json`
+- `../pilotnet_runs/<run_name>/train_args.json`
+- `../pilotnet_runs/<run_name>/test_metrics.json` if a test split exists
 
 The model predicts normalized steering during training:
 

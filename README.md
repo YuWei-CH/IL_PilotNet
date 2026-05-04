@@ -21,8 +21,9 @@ for_real_car/README.md
 ```
 
 Large datasets, local virtual environments, and debug image dumps are
-intentionally ignored by git. The current best simulator checkpoint is kept in
-the repository for convenience.
+intentionally ignored by git. Store all trained model runs under the top-level
+`pilotnet_runs/` directory. The current best simulator checkpoint is kept in the
+repository for convenience.
 
 ## Python Environment
 
