@@ -649,6 +649,8 @@ def main():
     best_val_loss = float("inf")
     best_ckpt_path = os.path.join(args.output_dir, "best_model.pt")
     latest_ckpt_path = os.path.join(args.output_dir, "latest_model.pt")
+    save_json(os.path.join(args.output_dir, "train_args.json"), vars(args))
+    save_json(os.path.join(args.output_dir, "metrics.json"), metrics)
 
     for epoch in range(1, args.epochs + 1):
         train_metrics = run_epoch(
@@ -694,6 +696,8 @@ def main():
         if val_metrics["loss"] < best_val_loss:
             best_val_loss = val_metrics["loss"]
             torch.save(checkpoint, best_ckpt_path)
+        save_json(os.path.join(args.output_dir, "metrics.json"), metrics)
+        save_json(os.path.join(args.output_dir, "train_args.json"), vars(args))
 
         print(
             f"epoch={epoch:03d} "
@@ -701,8 +705,6 @@ def main():
             f"val_loss={val_metrics['loss']:.6f} val_mae={val_metrics['mae']:.6f}"
         )
 
-    save_json(os.path.join(args.output_dir, "metrics.json"), metrics)
-    save_json(os.path.join(args.output_dir, "train_args.json"), vars(args))
     print(f"saved best checkpoint to {best_ckpt_path}")
 
 
