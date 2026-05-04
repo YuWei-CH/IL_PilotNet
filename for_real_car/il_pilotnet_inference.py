@@ -168,16 +168,12 @@ class ILPacmodDriver(Node):
         self.declare_parameter('max_acceleration', 0.2)
         self.declare_parameter('speed_cmd_topic', '/pacmod/vehicle_speed_cmd')
 
-        # Steering safety
-        # The real-data label is PACMod steering_rpt.output, which matches the
-        # PACMod steering wheel command better than simulator front-wheel angle.
-        self.declare_parameter('model_output_unit', 'pacmod_steering')
+        # Steering safety. The real-data label is /pacmod/steering_rpt.output,
+        # matching pure_pursuit.py's final /pacmod/steering_cmd angular_position:
+        # steering wheel / PACMod motor angle in radians.
         self.declare_parameter('label_scale', 1.0)
         self.declare_parameter('steering_scale', 0.5)
         self.declare_parameter('max_steering_wheel_rad', 2.5)
-
-        # Compatibility mode for models trained to predict front-wheel angle.
-        self.declare_parameter('max_front_steer_rad', 0.25)
 
         # Steering smoothing:
         # smoothed = alpha * current + (1 - alpha) * previous
@@ -229,16 +225,10 @@ class ILPacmodDriver(Node):
         )
         self.speed_cmd_topic = self.get_parameter('speed_cmd_topic').value
 
-        self.model_output_unit = self.get_parameter('model_output_unit').value
-        if self.model_output_unit not in ('pacmod_steering', 'front_wheel_rad'):
-            raise RuntimeError("model_output_unit must be 'pacmod_steering' or 'front_wheel_rad'")
         self.label_scale = float(self.get_parameter('label_scale').value)
         self.steering_scale = float(self.get_parameter('steering_scale').value)
         self.max_steering_wheel_rad = float(
             self.get_parameter('max_steering_wheel_rad').value
-        )
-        self.max_front_steer_rad = float(
-            self.get_parameter('max_front_steer_rad').value
         )
         self.steer_alpha = float(
             self.get_parameter('steer_smoothing_alpha').value
@@ -289,14 +279,13 @@ class ILPacmodDriver(Node):
         self.get_logger().info(f"Using device: {self.device}")
         self.get_logger().info(
             "IL command config: speed_control_mode=%s speed_cmd_topic=%s desired_speed=%.2f max_accel=%.2f "
-            "model_output_unit=%s label_scale=%.2f steering_scale=%.2f "
+            "steering_unit=pacmod_steering_wheel_rad label_scale=%.2f steering_scale=%.2f "
             "max_steering_wheel_rad=%.2f preprocessing=%dx%d crop=(top=%.2f,bottom=%.2f,left=%.2f,right=%.2f) image_mode=%s"
             % (
                 self.speed_control_mode,
                 self.speed_cmd_topic,
                 self.desired_speed,
                 self.max_accel,
-                self.model_output_unit,
                 self.label_scale,
                 self.steering_scale,
                 self.max_steering_wheel_rad,
@@ -479,8 +468,10 @@ class ILPacmodDriver(Node):
         self.label_scale = float(checkpoint_args.get('label_scale', self.label_scale))
 
         label_unit = checkpoint_args.get('label_unit', '')
-        if label_unit and 'pacmod' in label_unit.lower():
-            self.model_output_unit = 'pacmod_steering'
+        if label_unit and 'pacmod' not in label_unit.lower():
+            self.get_logger().warn(
+                f"Checkpoint label_unit is '{label_unit}', but this node expects PACMod steering radians."
+            )
 
         self.validate_preprocessing_config()
 
@@ -577,24 +568,11 @@ class ILPacmodDriver(Node):
             with torch.no_grad():
                 pred = self.model(x).item()
 
-            pred = float(pred) * self.label_scale * self.steering_scale
-
-            if self.model_output_unit == 'front_wheel_rad':
-                # Older experimental models may predict front-wheel angle.
-                # Convert those to PACMod steering wheel angle.
-                front_steer_rad = np.clip(
-                    pred,
-                    -self.max_front_steer_rad,
-                    self.max_front_steer_rad
-                )
-                steering_wheel_rad = math.radians(
-                    self.front2steer(math.degrees(front_steer_rad))
-                )
-            else:
-                # Real GEM4 models trained on PACMod steering_rpt.output should
-                # publish that unit directly. Do not run front2steer(), because
-                # that would amplify the steering a second time.
-                steering_wheel_rad = pred
+            # The model was trained against /pacmod/steering_rpt.output.
+            # That is the same PACMod steering wheel/motor angle unit that
+            # pure_pursuit.py publishes to /pacmod/steering_cmd.angular_position.
+            # Do not run front-wheel-to-steering-wheel conversion here.
+            steering_wheel_rad = float(pred) * self.label_scale * self.steering_scale
 
             steering_wheel_rad = np.clip(
                 steering_wheel_rad,
@@ -642,25 +620,6 @@ class ILPacmodDriver(Node):
             return 0
         else:
             return 2
-
-    def front2steer(self, f_angle_deg):
-        """
-        Convert front wheel angle in degrees to steering wheel angle in degrees.
-
-        This is copied from your pure_pursuit.py:
-            f_angle -> steering wheel angle
-
-        The PACMod steering_cmd angular_position expects steering wheel angle in radians.
-        """
-        f_angle_deg = max(min(f_angle_deg, 35.0), -35.0)
-
-        angle = abs(f_angle_deg)
-        steer_angle = -0.1084 * angle ** 2 + 21.775 * angle
-
-        if f_angle_deg >= 0:
-            return round(steer_angle, 2)
-        else:
-            return round(-steer_angle, 2)
 
     def image_is_fresh(self):
         if not self.received_image:

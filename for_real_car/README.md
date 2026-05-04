@@ -116,16 +116,18 @@ Optimized CUDA run:
 ```bash
 uv run python train_real_pilotnet.py \
   --data-root real_pilotnet_data \
-  --output-dir ../pilotnet_runs/run_real_gem4_full_optimized \
-  --epochs 25 \
+  --output-dir ../pilotnet_runs/run_real_gem4_lane_follow_full_001 \
+  --epochs 60 \
   --batch-size 128 \
-  --learning-rate 1e-3 \
+  --learning-rate 5e-4 \
   --weight-decay 1e-4 \
-  --crop-top-ratio 0.65 \
-  --crop-bottom-ratio 0.05 \
+  --crop-top-ratio 0.5 \
+  --crop-bottom-ratio 0.0 \
   --crop-left-ratio 0.08 \
   --crop-right-ratio 0.08 \
   --image-mode rgb \
+  --label-scale 10.0 \
+  --loss smooth_l1 \
   --num-workers 4 \
   --image-cache-policy auto \
   --image-cache-max-gb 24 \
@@ -173,6 +175,13 @@ Default `label_scale` is `10.0`.
 `il_pilotnet_inference.py` is an experimental ROS2 node for the GEM4 PACMod2 stack.
 It subscribes to the compressed OAK camera image and publishes PACMod steering,
 gear, accel, brake, turn, and global commands.
+
+Steering follows the same PACMod interface used by `gem_gnss_control`'s
+`pure_pursuit.py`: the node publishes `PositionWithSpeed.angular_position` to
+`/pacmod/steering_cmd`. The value is PACMod steering wheel/motor angle in
+radians, not simulator front-wheel angle. Models trained by
+`train_real_pilotnet.py` predict `/pacmod/steering_rpt.output`, so inference
+publishes the scaled model output directly after safety clamping and smoothing.
 
 Example direct run after sourcing the vehicle ROS2 workspace:
 
