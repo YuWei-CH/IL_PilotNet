@@ -13,7 +13,7 @@ Training still uses the shared model definition at:
 ../pilotnet_model.py
 ```
 
-For simpler real-car deployment, `il_pilotnet_inference.py` also contains an
+For simpler real-car deployment, `yws_il_pacmod_driver.py` also contains an
 inline copy of the same `PilotNet` architecture. On the vehicle, the inference
 script only needs itself plus the checkpoint file.
 
@@ -24,7 +24,7 @@ script only needs itself plus the checkpoint file.
 - `preview_real_preprocessing.py`: visualize crop/resize/image-mode preprocessing.
 - `train_real_pilotnet.py`: train the real-car PilotNet model.
 - `real_data_splits.json`: selected train/valid/test bag split.
-- `il_pilotnet_inference.py`: experimental ROS2 PACMod2 control node for GEM4.
+- `yws_il_pacmod_driver.py`: experimental ROS2 PACMod2 control node for GEM4.
 
 Generated datasets, previews, and debug dumps are ignored by git. Put all model
 runs in the repository-level `../pilotnet_runs/` directory so simulator and
@@ -176,7 +176,7 @@ Default `label_scale` is `10.0`.
 
 ## 5. Real-Car PACMod2 Control
 
-`il_pilotnet_inference.py` is an experimental ROS2 node for the GEM4 PACMod2 stack.
+`yws_il_pacmod_driver.py` is an experimental ROS2 node for the GEM4 PACMod2 stack.
 It subscribes to the compressed OAK camera image and publishes PACMod steering,
 gear, accel, brake, turn, and global commands.
 
@@ -195,15 +195,15 @@ publishes the scaled model output directly after safety clamping and smoothing.
 Example direct run after sourcing the vehicle ROS2 workspace:
 
 ```bash
-python3 il_pilotnet_inference.py \
+python3 yws_il_pacmod_driver.py \
   --ros-args \
-  -p model_path:=/path/to/best_model.pt \
-  -p device:=auto \
-  -p desired_speed:=0.5 \
+  -p model_path:=best_model.pt \
+  -p device:=cpu \
+  -p desired_speed:=2.5 \
   -p max_acceleration:=0.5 \
-  -p max_steering_wheel_rad:=2.5 \
-  -p steering_scale:=0.5 \
-  -p steer_smoothing_alpha:=0.3
+  -p max_steering_wheel_rad:=10.0 \
+  -p steering_scale:=1.0 \
+  -p steer_smoothing_alpha:=0.25
 ```
 
 `device` can be `auto`, `cuda`, or `cpu`. Use `cpu` on the vehicle if CUDA is

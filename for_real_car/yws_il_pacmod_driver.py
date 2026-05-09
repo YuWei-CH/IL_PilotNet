@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ================================================================
-# File name: il_pilotnet_inference.py
+# File name: yws_il_pacmod_driver.py
 # Description:
 #   Real GEM vehicle IL driver using PilotNet + PACMod.
 #
@@ -24,15 +24,7 @@
 '''
 how to run:
 
-python3 il_pilotnet_inference.py \
-  --ros-args \
-  -p model_path:=/path/to/models/best_model.pt \
-  -p device:=cpu \
-  -p desired_speed:=0.5 \
-  -p max_acceleration:=0.5 \
-  -p max_steering_wheel_rad:=2.5 \
-  -p steering_scale:=0.5 \
-  -p steer_smoothing_alpha:=0.25
+ python3 yws_il_pacmod_driver.py   --ros-args   -p model_path:=best_model.pt   -p device:=cpu   -p desired_speed:=2.5   -p max_acceleration:=0.5   -p max_steering_wheel_rad:=10.0   -p steering_scale:=1.0   -p steer_smoothing_alpha:=0.25
 '''
 
 
@@ -178,7 +170,7 @@ class OnlineFilter:
 # ================================================================
 class ILPacmodDriver(Node):
     def __init__(self):
-        super().__init__('il_pilotnet_inference')
+        super().__init__('yws_il_pacmod_driver')
 
         # ----------------------------
         # Parameters
@@ -201,14 +193,14 @@ class ILPacmodDriver(Node):
         # Driving parameters. Match gem_gnss_control/pure_pursuit.py:
         # use /pacmod/accel_cmd and /pacmod/brake_cmd, not vehicle_speed_cmd.
         self.declare_parameter('desired_speed', 2.0)
-        self.declare_parameter('max_acceleration', 0.5)
+        self.declare_parameter('max_acceleration', 1.0)
 
         # Steering safety. The real-data label is /pacmod/steering_rpt.output,
         # matching pure_pursuit.py's final /pacmod/steering_cmd angular_position:
         # steering wheel / PACMod motor angle in radians.
         self.declare_parameter('label_scale', 1.0)
         self.declare_parameter('steering_scale', 0.5)
-        self.declare_parameter('max_steering_wheel_rad', 2.5)
+        self.declare_parameter('max_steering_wheel_rad', 10.0)
 
         # Steering smoothing:
         # smoothed = alpha * current + (1 - alpha) * previous
@@ -584,6 +576,7 @@ class ILPacmodDriver(Node):
 
     def speed_callback(self, msg):
         self.speed = self.speed_filter.get_data(msg.vehicle_speed)
+        # self.speed = self.msg.vehicle_speed
 
     def image_callback(self, msg):
         try:
@@ -685,6 +678,7 @@ class ILPacmodDriver(Node):
         if joy_enable == 1 and not self.pacmod_enable:
             self.global_cmd.enable = True
             self.global_cmd.clear_override = True
+            self.global_cmd.ignore_override = False
             self.global_pub.publish(self.global_cmd)
 
             # Forward gear
@@ -749,8 +743,10 @@ class ILPacmodDriver(Node):
         # --------------------------------------------------------
         # Case 5: normal IL driving
         # --------------------------------------------------------
+        # Keep PACMod enabled and clear override
         self.global_cmd.enable = True
         self.global_cmd.clear_override = True
+        self.global_cmd.ignore_override = False
         self.global_pub.publish(self.global_cmd)
 
         self.gear_cmd.command = 3
